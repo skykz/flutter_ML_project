@@ -50,17 +50,10 @@ class _CameraScreenState extends State<CameraScreen>
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();  
 
 
-  bool _cameraInitialized = false;
   bool _isDetecting = false;
-  String _topText = '';
-  int _soundId;
   CameraImage _savedImage;
   Map _savedRect;
-  Uint8List _snapShot;
   // ui.Image _buttonImage;
-  bool _showSnapshot = false;
-  bool _tfliteBusy = false;
-  String _tempPath;
 
 
   @override

@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_share/flutter_share.dart';
 
 class GoogleMapsScreen extends StatefulWidget {  
 
@@ -24,6 +26,7 @@ class _MyAppState extends State<GoogleMapsScreen> {
   MapType _currentMapType = MapType.normal;
   Location _locationService = Location();
   String error;
+  double size = 0.0;
   LocationData _currentLocation;
   LatLng selectedLocation = LatLng(0.0, 0.0);
   bool isloaded = false;
@@ -68,12 +71,15 @@ class _MyAppState extends State<GoogleMapsScreen> {
   }
 
   void initPlatformState() async {
-    final Uint8List markerIcon = await getBytesFromAsset(
+    final Uint8List currentLocation = await getBytesFromAsset(
         'assets/images/location_icon.png');
+    final Uint8List monumentLocation = await getBytesFromAsset(
+        'assets/images/monument.png');
         
     try {
       _currentLocation = await _locationService.getLocation();
       setState(() {
+        isloaded = true;
         _center = LatLng(_currentLocation.latitude, _currentLocation.longitude);
       });
       _animateToCenter();
@@ -90,28 +96,30 @@ class _MyAppState extends State<GoogleMapsScreen> {
             title: ' Вы здесь ',
             snippet: ' Текущее местоположение ',
           ),          
-          icon: BitmapDescriptor.fromBytes(markerIcon)));
+          icon: BitmapDescriptor.fromBytes(currentLocation)));
    
       if (objectsMap.length != 0){
         for (var entryMap in objectsMap.entries) {
           log("${entryMap.toString()}");
-          clientMarker.add(Marker(
+          clientMarker.add(Marker(            
               markerId: MarkerId("specialistLocation${entryMap.toString()}"),
               position: LatLng(
                   entryMap.key, entryMap.value),
               alpha: 1.0,
               draggable: true,              
               zIndex: 100.0,
-              onTap:(){  
+              onTap:(){        
+                _modalBottomSheetMenu();          
                 setState(() {              
                    selectedLocation = LatLng(entryMap.key, entryMap.value);
                 });
                 buildRoute(_center,selectedLocation);                                                  
+               
               },
               infoWindow: InfoWindow(
-                title: 'Объекты',                
+                title: 'Объект',                
               ),
-              icon: BitmapDescriptor.fromBytes(markerIcon)));
+              icon: BitmapDescriptor.fromBytes(monumentLocation)));
         }            
       }
       if(_center != null && selectedLocation.latitude != 0.0 && selectedLocation.longitude != 0.0){        
@@ -127,8 +135,11 @@ class _MyAppState extends State<GoogleMapsScreen> {
     }
   }
 
-  void buildRoute(LatLng center,LatLng destinationLocation){   
+   Future buildRoute(LatLng center,LatLng destinationLocation) async {            
       setPolylines(center, destinationLocation);
+      setState(() {
+        size = 0.3;
+      });
   }
 
 
@@ -151,42 +162,22 @@ class _MyAppState extends State<GoogleMapsScreen> {
         });       
       });}  
     
-
-    // setState(() {
-    //   _polylines
-    // });
-    
-    // if(_polylines.length > 0){
-    //  log("1 ---------- ${_polylines.elementAt(0).points}");
-    //  setState(() {
-    //       var value = _polylines.elementAt(0);      
-    //   _polylines.remove(value);
-    //   _polylines.add(value);
-    //  });   
-    //   // var val =  _polylines.elementAt(1);
-    //   // _polylines.remove(val);
-    //  log("2 ---------- ${_polylines.elementAt(0)}");
-    // }
-   
-
     setState(() {              
         Polyline polyline = Polyline(
           polylineId: PolylineId("poly"),
           color: Colors.purpleAccent,
           points: polylineCoordinates,
           consumeTapEvents:true,         
-          patterns: [
-            PatternItem.dash(20.0),
-            PatternItem.gap(10)            
-          ],
+          // patterns: [
+          //   PatternItem.dash(20.0),
+          //   PatternItem.gap(10)            
+          // ],
           endCap: Cap.roundCap,         
           startCap: Cap.buttCap,
           width: 6,         
         );    
 
-        print("+++++++++ ${polylineCoordinates.length}");
-         if(_polylines.length >= 0){
-           log("+++++++++++++++++++++++++++");
+        if(_polylines.length >= 0){         
             setState(() {
               polylineCoordinates = [];
             });                               
@@ -206,7 +197,7 @@ class _MyAppState extends State<GoogleMapsScreen> {
 
     ByteData data = await rootBundle.load(path);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
-        targetWidth: 90);
+        targetWidth: 150);
     ui.FrameInfo fi = await codec.getNextFrame();
     return (await fi.image.toByteData(format: ui.ImageByteFormat.png))
         .buffer
@@ -254,6 +245,72 @@ class _MyAppState extends State<GoogleMapsScreen> {
     });
   }
 
+Future<void> share() async {
+  await FlutterShare.share(
+      title: 'Example share',
+      text: 'Example share text',
+      linkUrl: 'https://flutter.dev/',
+      chooserTitle: 'Example Chooser Title');
+}
+
+
+void _modalBottomSheetMenu(){
+        showModalBottomSheet(
+            context: context,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+            ),
+            builder: (builder){
+              return  Container(
+                height: 450.0,
+                 decoration:  BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius:  BorderRadius.only(
+                            topLeft: const Radius.circular(20.0),
+                            topRight: const Radius.circular(20.0))),
+                child:  Container(                   
+                    child: Center(
+                      child:  Column(children: <Widget>[
+                        SizedBox(
+                          height: 20,                        
+                        ),
+                        Container(
+                          height: 200,
+                          color: Colors.amber,
+                        ),
+                        Expanded(
+                            child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(18.0),
+                                  child:  RaisedButton(
+                                          shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10.0),
+                                                side: BorderSide(color: Colors.red)
+                                              ),
+                                          padding:EdgeInsets.only(right:50.0,left: 50.0,top: 10,bottom: 10.0) ,
+                                          autofocus: true,
+                                          elevation: 3,
+                                          color: Colors.white,                                          
+                                          onPressed: share,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: <Widget>[
+                                              Icon(Icons.share),
+                                              SizedBox(width: 15.0,),
+                                              Text("Share")
+                                            ],
+                                          ),
+                                        )
+                                )))
+                      ],)
+                    )),
+              );
+            }
+        );
+      }
+
   void _animateToCenter() async {
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(CameraUpdate.newLatLng(_center));
@@ -283,9 +340,10 @@ class _MyAppState extends State<GoogleMapsScreen> {
           onPressed: (){Navigator.pop(context);}
         ),    
       ),
-      body: Stack(
+      body:Stack(
         children: <Widget>[
-          GoogleMap(
+          isloaded?
+          GoogleMap(            
             onMapCreated: _onMapCreated,
             initialCameraPosition: CameraPosition(
               target: _center,
@@ -298,6 +356,12 @@ class _MyAppState extends State<GoogleMapsScreen> {
             polylines: _polylines,
             onCameraMove: _onCameraMove,
             // circles: circles,
+          ):Container(
+            child: Center(
+              child:CupertinoActivityIndicator(
+                radius: 20,
+              )
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: 10.0,top: 10.0),
@@ -312,7 +376,7 @@ class _MyAppState extends State<GoogleMapsScreen> {
                       child: FloatingActionButton(
                         elevation: 15.0,
                         heroTag: "mapType",
-                        onPressed: _onMapTypeButtonPressed,
+                        onPressed:_onMapTypeButtonPressed,
                         materialTapTargetSize: MaterialTapTargetSize.padded,
                         backgroundColor: Colors.white,
                         child: const Icon(
@@ -388,6 +452,38 @@ class _MyAppState extends State<GoogleMapsScreen> {
               ),
             ),
           ),        
+          // DraggableScrollableSheet(
+          //   initialChildSize: 0.1,
+          //   minChildSize: 0.1,
+          //   maxChildSize: 0.8,       
+          //   expand: true,     
+          //     builder: (BuildContext context, myscrollController) {
+          //       return Container(                  
+          //         decoration: BoxDecoration(
+          //           color: Colors.white,
+          //           borderRadius: BorderRadius.circular(20.0),    
+          //            boxShadow: [
+          //               BoxShadow(
+          //                   color: Colors.black.withOpacity(.05),
+          //                   offset: Offset(0, 0),
+          //                   blurRadius: 20,
+          //                   spreadRadius: 3
+          //               )]                
+          //         ),
+          //         child: ListView.builder(
+          //         controller: myscrollController,
+          //         itemCount: 25,
+          //         itemBuilder: (BuildContext context, int index) {
+          //           return ListTile(
+          //               title: Text(
+          //             'Dish $index',
+          //             style: TextStyle(color: Colors.black54),
+          //           ));
+          //         },
+          //       ),
+          //     );              
+          //     },
+          //   )        
         ],
       ),
     );
