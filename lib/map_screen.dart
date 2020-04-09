@@ -1,15 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_share/flutter_share.dart';
+import 'package:share/share.dart';
 
 class GoogleMapsScreen extends StatefulWidget {  
 
@@ -17,18 +18,17 @@ class GoogleMapsScreen extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<GoogleMapsScreen> {
+class _MyAppState extends State<GoogleMapsScreen> with SingleTickerProviderStateMixin{
   Completer<GoogleMapController> _controller = Completer();
 
   static LatLng _center = LatLng(43.22609, 76.91672);
+  
   Set<Marker> clientMarker = Set();
   LatLng _lastMapPosition = _center;
   MapType _currentMapType = MapType.normal;
   Location _locationService = Location();
   String error;
-  double size = 0.0;
   LocationData _currentLocation;
-  LatLng selectedLocation = LatLng(0.0, 0.0);
   bool isloaded = false;
   Map<double,double> objectsMap = {
     41.455523:69.1693498,
@@ -50,6 +50,10 @@ class _MyAppState extends State<GoogleMapsScreen> {
   // which generates every polyline between start and finish
   PolylinePoints polylinePoints = PolylinePoints();
 
+  AnimationController _animController;
+  Duration _duration = Duration(milliseconds: 500);
+  Tween<Offset> _tween = Tween(begin: Offset(0, 1), end: Offset(0, 0));
+
   @override
   void dispose() {
     if (_controller != null) _controller = null;
@@ -66,7 +70,7 @@ class _MyAppState extends State<GoogleMapsScreen> {
   @override
   void initState() {
     initPlatformState();
-
+    _animController = AnimationController(vsync: this, duration: _duration);
     super.initState();
   }
 
@@ -78,9 +82,9 @@ class _MyAppState extends State<GoogleMapsScreen> {
         
     try {
       _currentLocation = await _locationService.getLocation();
-      setState(() {
-        isloaded = true;
+      setState(() {       
         _center = LatLng(_currentLocation.latitude, _currentLocation.longitude);
+         isloaded = true;
       });
       _animateToCenter();
       clientMarker = Set();
@@ -93,8 +97,8 @@ class _MyAppState extends State<GoogleMapsScreen> {
           onTap: () {},
           zIndex: 100.0,
           infoWindow: InfoWindow(
-            title: ' Вы здесь ',
-            snippet: ' Текущее местоположение ',
+            title: ' You are here ',
+            snippet: ' Current location ',
           ),          
           icon: BitmapDescriptor.fromBytes(currentLocation)));
    
@@ -108,23 +112,23 @@ class _MyAppState extends State<GoogleMapsScreen> {
               alpha: 1.0,
               draggable: true,              
               zIndex: 100.0,
-              onTap:(){        
-                _modalBottomSheetMenu();          
-                setState(() {              
-                   selectedLocation = LatLng(entryMap.key, entryMap.value);
-                });
-                buildRoute(_center,selectedLocation);                                                  
-               
+              onTap:() async {                                                       
+                LatLng  selectedLocation = LatLng(entryMap.key, entryMap.value);                
+                await buildRoute(_center,selectedLocation);                
+                // if (_animController.isDismissed)
+                  _animController.forward();
+                // else if (_animController.isCompleted)
+                //   _animController.reverse();
               },
               infoWindow: InfoWindow(
-                title: 'Объект',                
+                title: 'Monument object',                
               ),
               icon: BitmapDescriptor.fromBytes(monumentLocation)));
         }            
       }
-      if(_center != null && selectedLocation.latitude != 0.0 && selectedLocation.longitude != 0.0){        
-        setPolylines(_center,selectedLocation);       
-      }
+      // if(_center != null && selectedLocation.latitude != 0.0 && selectedLocation.longitude != 0.0){        
+      //   setPolylines(_center,selectedLocation);       
+      // }
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
         error = 'Permission denied';
@@ -135,15 +139,12 @@ class _MyAppState extends State<GoogleMapsScreen> {
     }
   }
 
-   Future buildRoute(LatLng center,LatLng destinationLocation) async {            
-      setPolylines(center, destinationLocation);
-      setState(() {
-        size = 0.3;
-      });
+  Future buildRoute(LatLng center,LatLng destinationLocation) async {            
+      await setPolylines(center, destinationLocation);    
   }
 
 
-  setPolylines(LatLng currentUser,LatLng destinationUser) async {   
+  Future setPolylines(LatLng currentUser,LatLng destinationUser) async {   
     List<PointLatLng> result = await
       polylinePoints?.getRouteBetweenCoordinates(
          "AIzaSyCr6FR8Oc6d6XOxgKjRHmlZP1NpTvIVGbU",
@@ -167,11 +168,7 @@ class _MyAppState extends State<GoogleMapsScreen> {
           polylineId: PolylineId("poly"),
           color: Colors.purpleAccent,
           points: polylineCoordinates,
-          consumeTapEvents:true,         
-          // patterns: [
-          //   PatternItem.dash(20.0),
-          //   PatternItem.gap(10)            
-          // ],
+          consumeTapEvents:true,                   
           endCap: Cap.roundCap,         
           startCap: Cap.buttCap,
           width: 6,         
@@ -184,9 +181,6 @@ class _MyAppState extends State<GoogleMapsScreen> {
          }
           _polylines.add(polyline);           
         });
-
-     log("----------- ${_polylines.length}");
-
 }
 
   void _onCameraMove(CameraPosition position) {
@@ -245,71 +239,6 @@ class _MyAppState extends State<GoogleMapsScreen> {
     });
   }
 
-Future<void> share() async {
-  await FlutterShare.share(
-      title: 'Example share',
-      text: 'Example share text',
-      linkUrl: 'https://flutter.dev/',
-      chooserTitle: 'Example Chooser Title');
-}
-
-
-void _modalBottomSheetMenu(){
-        showModalBottomSheet(
-            context: context,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
-            ),
-            builder: (builder){
-              return  Container(
-                height: 450.0,
-                 decoration:  BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius:  BorderRadius.only(
-                            topLeft: const Radius.circular(20.0),
-                            topRight: const Radius.circular(20.0))),
-                child:  Container(                   
-                    child: Center(
-                      child:  Column(children: <Widget>[
-                        SizedBox(
-                          height: 20,                        
-                        ),
-                        Container(
-                          height: 200,
-                          color: Colors.amber,
-                        ),
-                        Expanded(
-                            child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18.0),
-                                  child:  RaisedButton(
-                                          shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10.0),
-                                                side: BorderSide(color: Colors.red)
-                                              ),
-                                          padding:EdgeInsets.only(right:50.0,left: 50.0,top: 10,bottom: 10.0) ,
-                                          autofocus: true,
-                                          elevation: 3,
-                                          color: Colors.white,                                          
-                                          onPressed: share,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: <Widget>[
-                                              Icon(Icons.share),
-                                              SizedBox(width: 15.0,),
-                                              Text("Share")
-                                            ],
-                                          ),
-                                        )
-                                )))
-                      ],)
-                    )),
-              );
-            }
-        );
-      }
 
   void _animateToCenter() async {
     final GoogleMapController controller = await _controller.future;
@@ -330,7 +259,7 @@ void _modalBottomSheetMenu(){
     return Scaffold(
       appBar: AppBar(
         elevation: 2,
-        title: Text("Объекты на карте",
+        title: Text("Monuments on map",
           style: TextStyle(
               color: Colors.white),),
         centerTitle: true,
@@ -379,11 +308,9 @@ void _modalBottomSheetMenu(){
                         onPressed:_onMapTypeButtonPressed,
                         materialTapTargetSize: MaterialTapTargetSize.padded,
                         backgroundColor: Colors.white,
-                        child: const Icon(
-                          Icons.map,
-                          size: 30.0,
-                          color: Colors.purpleAccent,
-                        ),
+                        child: SvgPicture.asset('assets/images/mode-map.svg',
+                        width: 27,
+                        color: Colors.purpleAccent,),
                       ),
                     ),
                   ),                  
@@ -398,13 +325,10 @@ void _modalBottomSheetMenu(){
                         onPressed: _onZoomIn,
                         materialTapTargetSize: MaterialTapTargetSize.padded,
                         backgroundColor: Colors.white,
-                        child: Padding(padding: EdgeInsets.only(top:0.0),
-                        child: const Icon(
-                          Icons.add,
-                          size: 35.0,
-                          color: Colors.purpleAccent,
-                        ),
-                      )),
+                        child: SvgPicture.asset('assets/images/more.svg',
+                        width: 27,
+                        color: Colors.purpleAccent,),
+                      ),
                     ),
                   ),
                   SizedBox(height: 5.0),
@@ -418,13 +342,10 @@ void _modalBottomSheetMenu(){
                         onPressed: _onZoomOut,
                         materialTapTargetSize: MaterialTapTargetSize.padded,
                         backgroundColor: Colors.white,
-                        child: Padding(padding: EdgeInsets.only(top:20.0),
-                        child:  const Icon(
-                          Icons.maximize,
-                          size: 30.0,
-                          color: Colors.purpleAccent,
-                        ),
-                      )),
+                        child:SvgPicture.asset('assets/images/minus.svg',
+                        width: 27,
+                        color: Colors.purpleAccent,),
+                      ),
                     ),
                   ),
                   SizedBox(height: 50.0),
@@ -440,11 +361,9 @@ void _modalBottomSheetMenu(){
                         backgroundColor: Colors.white,
                         child: Padding(
                           padding: EdgeInsets.only(right: 0.0),
-                          child: Icon(
-                          Icons.my_location,
-                          size: 30.0,
-                          color: Colors.purpleAccent,
-                        )),
+                          child:SvgPicture.asset('assets/images/compass.svg',
+                        width: 27,
+                        color: Colors.purpleAccent,)),
                       ),
                     ),
                   ),
@@ -452,6 +371,114 @@ void _modalBottomSheetMenu(){
               ),
             ),
           ),        
+          SizedBox.expand(
+              child: SlideTransition(
+                position: _tween.animate(_animController),                
+                child: DraggableScrollableSheet(
+                  minChildSize: 0.1,                  
+                  expand: true,                  
+                  initialChildSize: 0.6,
+                  builder: (BuildContext context, ScrollController scrollController) {
+                    return Container(
+                      decoration: BoxDecoration(
+                          color: Colors.white,                          
+                          borderRadius: BorderRadius.circular(20.0),    
+                          boxShadow: [
+                              BoxShadow(
+                          color: Colors.grey,
+                          offset: Offset(1.0, -2.0),
+                          blurRadius: 10.0,
+                          spreadRadius: 2.0)]                
+                        ),
+                      child: ListView(
+                        controller: scrollController,
+                        addAutomaticKeepAlives: true,   
+                        children: <Widget>[
+                          SizedBox(
+                          height: 20,    
+                          child: SvgPicture.asset("assets/images/minus.svg",
+                          width: 150,
+                          color: Colors.grey,),                    
+                        ),
+                        Padding(padding: EdgeInsets.all(15.0),
+                          child:Center(
+                            child: Text("Name of monument",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 20.0
+                                  ),),                                 
+                             )),
+                        SizedBox(
+                          height: 200,                       
+                          child: CachedNetworkImage(
+                              imageUrl: "https://cs6.pikabu.ru/post_img/big/2015/06/07/2/1433638469_1625323923.jpg",
+                              imageBuilder: (context, imageProvider) => Container(
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                      image: imageProvider,
+                                      fit: BoxFit.cover,
+                                      ),
+                                ),
+                              ),
+                              placeholder: (context, url) => Center(
+                                child: CupertinoActivityIndicator(
+                                  radius: 20.0,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Icon(Icons.error),
+                          ),
+                        ),
+                        Padding(padding: EdgeInsets.all(15.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Flexible(
+                                   child: Text("Descriprion of monument",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 15.0
+                                  ),)) 
+                          ],
+                        ),),                        
+                        Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.all(18.0),
+                              child:  RaisedButton(
+                                      shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10.0),
+                                            side: BorderSide(color: Colors.red)
+                                          ),
+                                      padding:EdgeInsets.only(right:50.0,left: 50.0,top: 10,bottom: 10.0) ,
+                                      autofocus: true,
+                                      elevation: 3,
+                                      color: Colors.white,                                          
+                                      onPressed: (){
+                                        final RenderBox box = context.findRenderObject();
+                                        Share.share("text",
+                                            subject: "subject",
+                                            sharePositionOrigin: box.localToGlobal(Offset.zero) &
+                                                    box.size);
+                                                    },
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: <Widget>[
+                                          Icon(Icons.share),
+                                          SizedBox(width: 15.0,),
+                                          Text("Share")
+                                        ],
+                                      ),
+                                    )
+                            ))
+                        ],
+                        // shrinkWrap: true,                     
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
           // DraggableScrollableSheet(
           //   initialChildSize: 0.1,
           //   minChildSize: 0.1,

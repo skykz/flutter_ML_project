@@ -16,16 +16,7 @@
         android:label="project_ai"
         android:icon="@mipmap/ic_launcher">        
         <meta-data android:name="com.google.android.geo.API_KEY"
-               android:value="AIzaSyCr6FR8Oc6d6XOxgKjRHmlZP1NpTvIVGbU"/>
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.provider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@values/provider_paths"/>
-        </provider>
+               android:value="AIzaSyCr6FR8Oc6d6XOxgKjRHmlZP1NpTvIVGbU"/>       
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

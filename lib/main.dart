@@ -1,18 +1,20 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:project_ai/resources/widgets/camera_widget.dart';
 import 'package:project_ai/resources/widgets/rectangle_widget.dart';
 import 'package:project_ai/resources/widgets/thumbnail_widget.dart';
-import 'package:image/image.dart' as img;
+import 'package:project_ai/welcome_screen.dart';
 import 'package:tflite/tflite.dart';
 
 import 'map_screen.dart';
+import 'models/result_model.dart';
 
 void main() { 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
@@ -23,10 +25,12 @@ void main() {
             theme: ThemeData(
               primaryColor: Colors.purple,
               primarySwatch: Colors.deepPurple,
+              fontFamily: "Rubik",
+              platform: TargetPlatform.iOS,
               accentColor: Colors.purpleAccent
             ),
-            home:CameraScreen(),
-                )
+            home:WelcomeScreen(),
+            )
           );          
     });
 }
@@ -43,32 +47,41 @@ class _CameraScreenState extends State<CameraScreen>
   CameraController
       controller; // main controller plugin to work with camera(actions)
   // TabController tabController;
-  String videoPath; // for store video format with path
   String imagePath; // for store image format wiht path
   File imagePathFile;
   bool isPermitted = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();  
-
+  static StreamController<List<Result>> imageStream = StreamController();
 
   bool _isDetecting = false;
-  CameraImage _savedImage;
-  Map _savedRect;
-  // ui.Image _buttonImage;
+  static List<Result> _outputs = List();
+  static var modelLoaded = false;
+  AnimationController _colorAnimController;
+  Animation _colorTween;
 
 
   @override
   void initState() {
-    super.initState();
     getCameras();
-
+    _setupAnimation();
+    super.initState();
   }
 
   @override
   void dispose() {
+    Tflite.close();
     controller?.dispose();
+    imageStream?.close();
+ 
     super.dispose();
   }
 
+  void _setupAnimation() {
+    _colorAnimController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500));
+    _colorTween = ColorTween(begin: Colors.green, end: Colors.red)
+        .animate(_colorAnimController);
+  }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -100,32 +113,33 @@ class _CameraScreenState extends State<CameraScreen>
   }
 
   Future getCameras() async {
-    // await Tflite.loadModel(
-    //     model: "assets/ssd_mobilenet.tflite",
-    //     labels: "assets/ssd_mobilenet.txt");
-
+    loadModelML();
     cameras = await availableCameras();
     controller = CameraController(cameras[0], ResolutionPreset.high);
     controller.initialize().then((_) async {
       if (!mounted) {
         return;
       }
-      // await controller
-      //     .startImageStream((CameraImage image) => _processCameraImage(image));
-      setState(() {});
+      if(this.mounted)
+      setState(() {        
+      });
+      await controller
+          .startImageStream((CameraImage image) => _processCameraImage(image));
+      // setState(() {});
     });
   }
 
   void _processCameraImage(CameraImage image) async {
     if (_isDetecting) return;
     _isDetecting = true;
-    Future findDogFuture = _findDog(image);
+    Future findDogFuture = classifyImageCamera(image);
+
     List results = await Future.wait(
-        [findDogFuture, Future.delayed(Duration(milliseconds: 500))]);
-    setState(() {
-      _savedImage = image;
-      _savedRect = results[0];
-    });
+        [findDogFuture, Future.delayed(Duration(milliseconds: 1000))]);
+    if(results.isNotEmpty){
+      _outputs?.clear();
+      imageStream.sink.add(results[0]);
+    }
     _isDetecting = false;
   }
 
@@ -188,17 +202,23 @@ class _CameraScreenState extends State<CameraScreen>
   // by default permission is = false
   @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
     return  Stack(           
       fit: StackFit.expand,   
-                children: <Widget>[
+                children: <Widget>[               
                   _cameraPreviewWidget(), 
-                  getOptionsWidget(),
-                  // CustomPaint(painter: RectPainter(_savedRect))
+                  StreamBuilder(
+                    stream: imageStream.stream,
+                    builder: (context, snappShot) {
+                    return CustomPaint(painter: RectPainter(snappShot.data));
+                  }), 
+                  getOptionsWidget(),                                 
                   ],                 
     );
   }
 
   Widget getOptionsWidget() {
+    
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -207,8 +227,8 @@ class _CameraScreenState extends State<CameraScreen>
         iconTheme: IconThemeData(color: Colors.purpleAccent),
         actionsIconTheme: IconThemeData(color: Colors.white),
         leading: IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon:Icon(Icons.close,size: 35)),
+            onPressed: () => Navigator.of(context).pop(),
+            icon:Icon(Icons.arrow_back_ios,size: 30)),
         actions: <Widget>[
          _getCameraSwitch()                           
         ],
@@ -250,25 +270,35 @@ class _CameraScreenState extends State<CameraScreen>
 
   //button to switch between cameras
   Widget _getCameraSwitch() {
-    return IconButton(
-      icon: Icon(Icons.camera_alt,
-      color: Colors.purpleAccent,size: 30,),
-      onPressed: () {
-        if (controller != null && !controller.value.isRecordingVideo) {
-          CameraLensDirection direction = controller.description.lensDirection;
-          CameraLensDirection required = direction == CameraLensDirection.front
-              ? CameraLensDirection.back
-              : CameraLensDirection.front;
+    return  SizedBox(
+                height: 60,
+                width: 60,
+                child: InkWell(                
+                onTap: (){
+                  if (controller != null && !controller.value.isRecordingVideo) {
+                            CameraLensDirection direction = controller.description.lensDirection;
+                            CameraLensDirection required = direction == CameraLensDirection.front
+                                ? CameraLensDirection.back
+                                : CameraLensDirection.front;
 
-          for (CameraDescription cameraDescription in cameras) {
-            if (cameraDescription.lensDirection == required) {
-              onNewCameraSelected(cameraDescription);
-              return;
-            }
-          }
-        }
-      },
-    );
+                            for (CameraDescription cameraDescription in cameras) {
+                              if (cameraDescription.lensDirection == required) {
+                                onNewCameraSelected(cameraDescription);
+                                return;
+                              }
+                            }
+                    }
+                },
+                borderRadius: BorderRadius.circular(20.0),
+                splashColor: Colors.purpleAccent,              
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: SvgPicture.asset(
+                    "assets/images/switch-camera.svg",
+                    color: Colors.purpleAccent,),
+                ),
+              ),
+              );    
   }
 
   // the row located camera button, swich button and etc.
@@ -281,15 +311,25 @@ class _CameraScreenState extends State<CameraScreen>
       children: <Widget>[        
         CameraButton(takePicture: takePicture),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+          padding: const EdgeInsets.symmetric(horizontal: 25.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[    
-              IconButton(
-                icon: Icon(Icons.map,
-                  color: Colors.purpleAccent,
-                  size: 35,), 
-                onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (context) => GoogleMapsScreen()))),        
+              SizedBox(
+                height: 60,
+                width: 60,
+                child: InkWell(                
+                onTap: ()=> Navigator.push(context, MaterialPageRoute(builder: (context) => GoogleMapsScreen())),
+                borderRadius: BorderRadius.circular(20.0),
+                splashColor: Colors.purpleAccent,              
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: SvgPicture.asset(
+                    "assets/images/map.svg",
+                    color: Colors.purpleAccent,),
+                ),
+              ),
+              ),                  
               Expanded(
                 child: Container(
                   height: 50.0,
@@ -305,6 +345,62 @@ class _CameraScreenState extends State<CameraScreen>
       ],
     ));
   }
+
+  
+   Future<Map> classifyImageCamera(CameraImage image) async {
+    List resultList = await Tflite.detectObjectOnFrame(
+      bytesList: image.planes.map((plane) {
+        return plane.bytes;
+      }).toList(),
+      model: "SSDMobileNet",
+      imageHeight: image.height,
+      imageWidth: image.width,
+      imageMean: 127.5,
+      imageStd: 127.5,
+      threshold: 0.2, 
+      numResultsPerClass: 2,// defaults to 5
+      asynch: true 
+    );
+
+    List<String> possibleDog = ['dog', 'cat', 'bear', 'teddy bear', 'sheep'];
+    Map biggestRect;
+    double rectSize, rectMax = 0.0;
+    for (int i = 0; i < resultList.length; i++) {
+      if (possibleDog.contains(resultList[i]["detectedClass"])) {
+        Map aRect = resultList[i]["rect"];
+        rectSize = aRect["w"] * aRect["h"];
+        if (rectSize > rectMax) {
+          rectMax = rectSize;
+          biggestRect = aRect;
+        }
+      }
+    }
+    return biggestRect;
+  }
+
+  //  static classifyImage(CameraImage image) async {
+  //   List<Result> value = List();
+
+  //   value = await Tflite.runModelOnFrame(
+  //           bytesList: image.planes.map((plane) {
+  //             return plane.bytes;
+  //           }).toList(),
+  //           numResults: 5);
+        
+  //     //Sort results according to most confidence
+  //     // _outputs.sort((a, b) => a.confidence.compareTo(b.confidence));
+      
+  //     //Send results
+  //     //  imageStream.add(_outputs);
+  //   // });
+  //   return value;
+  // }
+
+  Future loadModelML() async {
+      return await Tflite.loadModel(
+          model: "assets/ssd_mobilenet.tflite",
+          labels: "assets/ssd_mobilenet.txt");
+  } 
 
   // Uint8List imageToByteListFloat32(img.Image image, int inputSize, double mean, double std) {
   //   var convertedBytes = Float32List(1 * inputSize * inputSize * 3);
@@ -429,32 +525,5 @@ class _CameraScreenState extends State<CameraScreen>
   //   }).toList();
   // }
 
-  Future<Map> _findDog(CameraImage image) async {
-    List resultList = await Tflite.detectObjectOnFrame(
-      bytesList: image.planes.map((plane) {
-        return plane.bytes;
-      }).toList(),
-      model: "SSDMobileNet",
-      imageHeight: image.height,
-      imageWidth: image.width,
-      imageMean: 127.5,
-      imageStd: 127.5,
-      threshold: 0.2, 
-    );
 
-    List<String> possibleDog = ['dog', 'cat', 'bear', 'teddy bear', 'sheep'];
-    Map biggestRect;
-    double rectSize, rectMax = 0.0;
-    for (int i = 0; i < resultList.length; i++) {
-      if (possibleDog.contains(resultList[i]["detectedClass"])) {
-        Map aRect = resultList[i]["rect"];
-        rectSize = aRect["w"] * aRect["h"];
-        if (rectSize > rectMax) {
-          rectMax = rectSize;
-          biggestRect = aRect;
-        }
-      }
-    }
-    return biggestRect;
-  }
 }

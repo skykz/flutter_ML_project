@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:project_ai/result_screen.dart';
 
 class ThumbnailWidget extends StatefulWidget {
   final double size;
@@ -22,37 +23,43 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   Future getImage() async {
     var image = await ImagePicker.pickImage(source: ImageSource.gallery);
     if (image == null) {
-      return;
+      return null;
     }
-    // Navigator.of(context).push(MaterialPageRoute(
-    //     builder: (context) => StoryCreateScreen(
-    //           imagePath: image.path,
-    //         )));
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => CameraImageResult(
+              imageFile:image,
+            )));
+    return image;            
   }
 
   @override
   Widget build(BuildContext context) {
     thumb = widget.imagePath;
-    return GestureDetector(
-      onTap: getImage,
-      child: Container(
-          width: widget.size,
-          height: widget.size,
-          decoration: BoxDecoration(
-              color: Colors.black,
-              border: Border.all(color: Colors.purpleAccent, width: 1.5),
-              borderRadius: BorderRadius.circular(8.0)),
-          child: thumb != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.file(
-                    File(thumb),
-                    fit: BoxFit.cover,
-                    width: 75.0,
-                    height: 75.0,
-                  ),
-                )
-              : null),
+    return InkWell(
+      onTap: getImage,   
+      borderRadius: BorderRadius.circular(20.0),
+      splashColor: Colors.purpleAccent,
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+                color: Colors.black,
+                border: Border.all(color: Colors.purpleAccent, width: 1.5),
+                borderRadius: BorderRadius.circular(8.0)),
+            child: thumb != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.file(
+                      File(thumb),
+                      fit: BoxFit.cover,
+                      width: 75.0,
+                      height: 75.0,
+                    ),
+                  )
+                : null),
+      ),
     );
   }
 }

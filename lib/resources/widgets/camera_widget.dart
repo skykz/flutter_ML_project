@@ -26,7 +26,7 @@ class _CameraButtonState extends State<CameraButton>
 
   @override
   Widget build(BuildContext context) {
-    double size = 62.0;
+    double size = 50.0;
 
     return EaseInWidget(
       onTap: () {
@@ -37,7 +37,7 @@ class _CameraButtonState extends State<CameraButton>
         children: <Widget>[
           Container(
             margin: EdgeInsets.symmetric(vertical: 0.0),
-            padding: EdgeInsets.all(3.0),
+            padding: EdgeInsets.all(5.0),
             decoration: BoxDecoration(
                 color: Colors.transparent,
                 shape: BoxShape.circle,
@@ -51,12 +51,16 @@ class _CameraButtonState extends State<CameraButton>
               //   child: Text("start",style: TextStyle(color: Colors.white),),
               // ),
               decoration:
-                  BoxDecoration(color: Colors.black45, 
+                  BoxDecoration(color: Colors.purple, 
                       shape: BoxShape.circle),              
             ),
           ),
           SizedBox(height: 10.0,),
-          Text("Проверить",style: TextStyle(color: Colors.white),)
+          Text("Detect",
+            style: TextStyle(
+                color: Colors.purpleAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,),)
         ],
       ) 
     );
