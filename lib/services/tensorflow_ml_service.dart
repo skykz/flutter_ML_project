@@ -30,18 +30,15 @@ class TFLiteHelper {
             numResults: 5)
         .then((value) {
       if (value.isNotEmpty) {
-        log("Results loaded. ${value.length}");
+        // log("Results loaded. ${value.length}");
 
         //Clear previous results
         _outputs.clear();
-
         
-
         value.forEach((element) {
           _outputs.add(Result(
               element['confidence'], element['index'], element['label']));
-
-          log("${element['confidence']} , ${element['index']}, ${element['label']}");
+          // log("${element['confidence']} , ${element['index']}, ${element['label']}");
         });
       }
 
@@ -54,7 +51,7 @@ class TFLiteHelper {
   }
 
   static void disposeModel(){
-    tfLiteResultsController.close();
+    tfLiteResultsController?.close();
     Tflite.close();
   }
 }

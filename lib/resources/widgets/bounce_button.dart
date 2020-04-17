@@ -78,6 +78,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
                 color: Colors.transparent,
                 child: Text(
                         widget.buttonText,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 20),

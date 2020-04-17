@@ -6,9 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:project_ai/models/result_model.dart';
+import 'package:project_ai/services/camera_service.dart';
 import 'package:project_ai/services/tensorflow_ml_service.dart';
 
-import 'camera_service.dart';
 
 class DetectScreen extends StatefulWidget {
   DetectScreen({Key key, this.title}) : super(key: key);
@@ -69,36 +69,20 @@ class _DetectScreenPageState extends State<DetectScreen>
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,        
+      appBar: AppBar(        
+        backgroundColor: Colors.black, 
         title: Text(widget.title,style: TextStyle(fontSize: 15.0),),
         actions: <Widget>[
-           DropdownButton<String>(
-            value: _value,
-            elevation: 3,            
-            icon: Icon(Icons.settings,color: Colors.white,),
-            style: TextStyle(
-              color: Colors.white,
-            ),
-            items: <DropdownMenuItem<String>>[                            
-               DropdownMenuItem(                
-                child:  Text('Best confidence',),
-                value: 'one',
-              ),
-               DropdownMenuItem(
-                child:  Text('All confidences'), 
-                value: 'two'),
-            ],
-            onChanged: (String value) {
-              setState(() => _value = value);
-            },
-          ),
+            IconButton(icon: Icon(
+              Icons.swap_vert,
+              size: 25,), 
+              onPressed: mainBottomSheet)               
         ],
       ),
       body: FutureBuilder<void>(
         future: CameraHelper.initializeControllerFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot != null) {
             // If the Future is complete, display the preview.
             return Stack(
               children: <Widget>[
@@ -188,5 +172,32 @@ class _DetectScreenPageState extends State<DetectScreen>
         AnimationController(vsync: this, duration: Duration(milliseconds: 500));
     _colorTween = ColorTween(begin: Colors.green, end: Colors.red)
         .animate(_colorAnimController);
+  }
+
+
+  mainBottomSheet() {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              _createTile(context, ' - Show Best confidence','one'),               
+              _createTile(context, ' - Show All confidence ','two'),
+            ],
+          );
+        });
+  }
+
+   ListTile _createTile(
+      BuildContext context, String name,String val) {
+    return ListTile(      
+      title: Text(name),
+      onTap: () {
+        setState(() => _value = val);
+        Navigator.pop(context);
+      },
+    );
   }
 }

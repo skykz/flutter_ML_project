@@ -5,32 +5,49 @@ import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:project_ai/app_localizations.dart';
+import 'package:project_ai/providers/main_provider.dart';
 import 'package:project_ai/resources/widgets/camera_widget.dart';
 import 'package:project_ai/resources/widgets/rectangle_widget.dart';
 import 'package:project_ai/resources/widgets/thumbnail_widget.dart';
-import 'package:project_ai/welcome_screen.dart';
+import 'package:project_ai/screens/welcome_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:tflite/tflite.dart';
 
-import 'map_screen.dart';
-import 'models/result_model.dart';
 
-void main() { 
+Future main() async { 
+   AppLanguage appLanguage = AppLanguage();
+   await appLanguage.fetchLocale();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
     .then((_) {
         runApp(
-          MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              primaryColor: Colors.purple,
-              primarySwatch: Colors.deepPurple,
-              fontFamily: "Rubik",
-              platform: TargetPlatform.iOS,
-              accentColor: Colors.purpleAccent
-            ),
-            home:WelcomeScreen(),
-            )
+          ChangeNotifierProvider<AppLanguage>(
+            create: (_) => appLanguage,
+            child: Consumer<AppLanguage>(builder: (context, model, child) {
+              return  MaterialApp(
+                locale: model.appLocal,
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData(
+                  primaryColor: Colors.purple,
+                  primarySwatch: Colors.deepPurple,
+                  fontFamily: "Rubik",
+                  platform: TargetPlatform.iOS,
+                  accentColor: Colors.purpleAccent
+                ),
+                supportedLocales: [
+                  Locale('en', 'US'), 
+                  Locale('ru', 'RU')],                
+                localizationsDelegates: [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,                  
+                ],               
+                  home:WelcomeScreen(),
+                );
+            }))                              
           );          
     });
 }
@@ -51,10 +68,9 @@ class _CameraScreenState extends State<CameraScreen>
   File imagePathFile;
   bool isPermitted = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();  
-  static StreamController<List<Result>> imageStream = StreamController();
+  static StreamController<Map<dynamic,dynamic>> imageStream = StreamController.broadcast();
 
   bool _isDetecting = false;
-  static List<Result> _outputs = List();
   static var modelLoaded = false;
   AnimationController _colorAnimController;
   Animation _colorTween;
@@ -135,10 +151,11 @@ class _CameraScreenState extends State<CameraScreen>
     Future findDogFuture = classifyImageCamera(image);
 
     List results = await Future.wait(
-        [findDogFuture, Future.delayed(Duration(milliseconds: 1000))]);
+        [findDogFuture, Future.delayed(Duration(milliseconds: 500))]);
     if(results.isNotEmpty){
-      _outputs?.clear();
+      // _outputs?.clear();
       imageStream.sink.add(results[0]);
+      print('_______________   ${results[0]}');
     }
     _isDetecting = false;
   }
@@ -210,7 +227,8 @@ class _CameraScreenState extends State<CameraScreen>
                   StreamBuilder(
                     stream: imageStream.stream,
                     builder: (context, snappShot) {
-                    return CustomPaint(painter: RectPainter(snappShot.data));
+                    return CustomPaint(
+                        painter: RectPainter(snappShot.data,));
                   }), 
                   getOptionsWidget(),                                 
                   ],                 
@@ -310,38 +328,38 @@ class _CameraScreenState extends State<CameraScreen>
       mainAxisSize: MainAxisSize.min,  
       children: <Widget>[        
         CameraButton(takePicture: takePicture),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[    
-              SizedBox(
-                height: 60,
-                width: 60,
-                child: InkWell(                
-                onTap: ()=> Navigator.push(context, MaterialPageRoute(builder: (context) => GoogleMapsScreen())),
-                borderRadius: BorderRadius.circular(20.0),
-                splashColor: Colors.purpleAccent,              
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: SvgPicture.asset(
-                    "assets/images/map.svg",
-                    color: Colors.purpleAccent,),
-                ),
-              ),
-              ),                  
-              Expanded(
-                child: Container(
-                  height: 50.0,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 48.0),                
-                ),
-              ),
-              // here is camera switcher (front and back)            
-              _getThumbnail(),
-            ],
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 25.0),
+        //   child: Row(
+        //     mainAxisAlignment: MainAxisAlignment.spaceAround,
+        //     children: <Widget>[    
+        //       SizedBox(
+        //         height: 60,
+        //         width: 60,
+        //         child: InkWell(                
+        //         onTap: ()=> Navigator.push(context, MaterialPageRoute(builder: (context) => GoogleMapsScreen())),
+        //         borderRadius: BorderRadius.circular(20.0),
+        //         splashColor: Colors.purpleAccent,              
+        //         child: Padding(
+        //           padding: const EdgeInsets.all(10.0),
+        //           child: SvgPicture.asset(
+        //             "assets/images/map.svg",
+        //             color: Colors.purpleAccent,),
+        //         ),
+        //       ),
+        //       ),                  
+        //       Expanded(
+        //         child: Container(
+        //           height: 50.0,
+        //           alignment: Alignment.center,
+        //           padding: const EdgeInsets.symmetric(horizontal: 48.0),                
+        //         ),
+        //       ),
+        //       // here is camera switcher (front and back)            
+        //       _getThumbnail(),
+        //     ],
+        //   ),
+        // ),
       ],
     ));
   }
@@ -361,18 +379,22 @@ class _CameraScreenState extends State<CameraScreen>
       numResultsPerClass: 2,// defaults to 5
       asynch: true 
     );
+    print("+++++++++++++++++++++++++++ $resultList");
 
     List<String> possibleDog = ['dog', 'cat', 'bear', 'teddy bear', 'sheep'];
-    Map biggestRect;
+    Map biggestRect = {};
     double rectSize, rectMax = 0.0;
     for (int i = 0; i < resultList.length; i++) {
-      if (possibleDog.contains(resultList[i]["detectedClass"])) {
+      // if (possibleDog.contains(resultList[i]["detectedClass"])) {
         Map aRect = resultList[i]["rect"];
         rectSize = aRect["w"] * aRect["h"];
+        Map label = {"label":resultList[i]["detectedClass"]};
+        
         if (rectSize > rectMax) {
           rectMax = rectSize;
-          biggestRect = aRect;
-        }
+          biggestRect.addAll(aRect);
+          biggestRect.addAll(label);
+        // }
       }
     }
     return biggestRect;

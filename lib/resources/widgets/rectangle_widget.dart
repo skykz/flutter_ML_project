@@ -13,8 +13,9 @@ class RectPainter extends CustomPainter {
       paint.color = Colors.purpleAccent;
       paint.style = PaintingStyle.stroke;      
       paint.strokeWidth = 3.0;
-      String detecting = "Detecting...";
-      TextSpan span =  TextSpan(style:  TextStyle(color: Colors.amber,fontSize: 15), text: detecting);
+      String detecting = "${rect["label"]}";
+      TextSpan span =  
+        TextSpan(style:  TextStyle(color: Colors.amber,fontSize: 22, backgroundColor:Colors.brown), text: detecting);
       TextPainter tp =  TextPainter(text: span, textAlign: TextAlign.center, textDirection: TextDirection.ltr);
      
       double x, y, w, h;
@@ -25,7 +26,7 @@ class RectPainter extends CustomPainter {
       Rect rect1 = Offset(x, y) & Size(w, h);
       canvas.drawRect(rect1, paint);      
       tp.layout();
-      tp.paint(canvas, Offset(x, y - 20.0));
+      tp.paint(canvas, Offset(x, y));
     }
   }
   @override
