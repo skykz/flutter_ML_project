@@ -56,11 +56,11 @@ class _CameraButtonState extends State<CameraButton>
             ),
           ),
           SizedBox(height: 10.0,),
-          Text("Detect",
-            style: TextStyle(
-                color: Colors.purpleAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,),)
+          // Text("Detect",
+          //   style: TextStyle(
+          //       color: Colors.purpleAccent,
+          //       fontWeight: FontWeight.bold,
+          //       fontSize: 15,),)
         ],
       ) 
     );

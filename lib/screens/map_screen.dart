@@ -160,18 +160,17 @@ class _MyAppState extends State<GoogleMapsScreen> with SingleTickerProviderState
 
 
   Future setPolylines(LatLng currentUser,LatLng destinationUser) async {   
-    List<PointLatLng> result = await
+
+    PolylineResult result = await
       polylinePoints?.getRouteBetweenCoordinates(
          "AIzaSyCr6FR8Oc6d6XOxgKjRHmlZP1NpTvIVGbU",
-         currentUser.latitude,
-         currentUser.longitude,
-         destinationUser.latitude,
-         destinationUser.longitude
+         PointLatLng(currentUser.latitude,currentUser.longitude), 
+         PointLatLng(destinationUser.latitude,destinationUser.longitude)                         
         );  
 
-     if(result.isNotEmpty){ 
+     if(result.points.isNotEmpty){ 
            // loop through all PointLatLng points and convert them      
-      result.forEach((PointLatLng point){
+      result.points.forEach((PointLatLng point){
         setState(() {
             polylineCoordinates.add(
             LatLng(point.latitude, point.longitude));
@@ -426,9 +425,13 @@ class _MyAppState extends State<GoogleMapsScreen> with SingleTickerProviderState
                              )),
                         SizedBox(
                           height: 200,                       
-                          child: CachedNetworkImage(
+                          child: mapModel.image_url == null? 
+                            CupertinoActivityIndicator(
+                                  radius: 20.0,
+                              ):
+                            CachedNetworkImage(
                               height: 50,
-                              imageUrl: mapModel.image_url??"http://beachmonkey.com/static/image/loading.gif",
+                              imageUrl: mapModel.image_url,
                               imageBuilder: (context, imageProvider) => Container(
                                 decoration: BoxDecoration(
                                   image: DecorationImage(
@@ -495,39 +498,7 @@ class _MyAppState extends State<GoogleMapsScreen> with SingleTickerProviderState
                   },
                 ),
               ),
-            ),
-          // DraggableScrollableSheet(
-          //   initialChildSize: 0.1,
-          //   minChildSize: 0.1,
-          //   maxChildSize: 0.8,       
-          //   expand: true,     
-          //     builder: (BuildContext context, myscrollController) {
-          //       return Container(                  
-          //         decoration: BoxDecoration(
-          //           color: Colors.white,
-          //           borderRadius: BorderRadius.circular(20.0),    
-          //            boxShadow: [
-          //               BoxShadow(
-          //                   color: Colors.black.withOpacity(.05),
-          //                   offset: Offset(0, 0),
-          //                   blurRadius: 20,
-          //                   spreadRadius: 3
-          //               )]                
-          //         ),
-          //         child: ListView.builder(
-          //         controller: myscrollController,
-          //         itemCount: 25,
-          //         itemBuilder: (BuildContext context, int index) {
-          //           return ListTile(
-          //               title: Text(
-          //             'Dish $index',
-          //             style: TextStyle(color: Colors.black54),
-          //           ));
-          //         },
-          //       ),
-          //     );              
-          //     },
-          //   )        
+            ),         
         ],
       ),
     );

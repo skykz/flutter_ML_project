@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project_ai/app_localizations.dart';
-import 'package:project_ai/main.dart';
 import 'package:project_ai/models/custom_menu_popup.dart';
 import 'package:project_ai/providers/main_provider.dart';
 import 'package:project_ai/resources/widgets/bounce_button.dart';
-import 'package:project_ai/screens/camera_service_screen.dart';
+import 'package:project_ai/screens/feedback.dart';
 import 'package:project_ai/screens/result_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'about_screen.dart';
+import 'camera_screen.dart';
 import 'map_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -129,12 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(30.0),
                         bottomRight: Radius.circular(30.0))),
-                child: Center(
-                    child: Text(
-                  AppLocalizations.of(context).translate('welcome_header'),
-                  style: TextStyle(color: Colors.white, fontSize: 22),
-                  textAlign: TextAlign.center,
-                )),
+                child: Center(),
               ),
             ],
           ),
@@ -164,6 +159,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ],
               ),
               PrimaryButton(
+                isOrderCreating: false,
                 buttonText:
                     AppLocalizations.of(context).translate('pick_gallery'),
                 onPressed: () {
@@ -185,44 +181,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 height: 30.0,
               ),
               PrimaryButton(
+                isOrderCreating: false,
                 buttonText:
                     AppLocalizations.of(context).translate('pick_camera'),
                 onPressed: () {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => DetectScreen(
-                                title: "Real-Time Detection",
-                              )));
+                          builder: (context) => CameraScreen()));
                 },
                 colorButton: Colors.black,
                 height: 50.0,
                 width: 200.0,
-              ),
+              ),                          
               SizedBox(
                 height: 30.0,
               ),
               PrimaryButton(
-                buttonText:
-                    AppLocalizations.of(context).translate('object_detection'),
-                onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => CameraScreen()));
-                },
-                colorButton: Colors.black,
-                height: 50.0,
-                width: 200.0,
-              ),
-              SizedBox(
-                height: 30.0,
-              ),
-              PrimaryButton(
+                isOrderCreating: false,
                 buttonText: AppLocalizations.of(context).translate('about'),
                 onPressed: () {
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => AboutScreen()));
+                      MaterialPageRoute(builder: (context) => FeedBackScreen()));
                 },
-                colorButton: Colors.black38,
+                colorButton: Colors.orange,
                 height: 50.0,
                 width: 200.0,
               ),

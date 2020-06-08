@@ -2,9 +2,9 @@
     "app_name": "MonumentApp",
     "message" : "Select way to detect or predict object",
     "welcome_header" : "welcome to monument object detection mobile app ",
-    "about":"about",
+    "about":"Text to us",
     "pick_gallery":"From Gallery",
-    "pick_camera":"Real-Time detection",
+    "pick_camera":"real time detection",
     "object_detection":"Object detection",
     "map_title":"Monuments on map",
     "map_marker":"Your current location",    
@@ -12,5 +12,5 @@
     "title_result":"Detection image gallery",
     "button_result":"View info",
     "confidence_result":"confidence of object",
-    "name_result":"name of prediction"
+    "name_result":"name of object class"
 }

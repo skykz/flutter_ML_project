@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+
 class PrimaryButton extends StatefulWidget {
+  final bool isOrderCreating;
   final IconData icon;
   final String buttonText;
   final Function onPressed;
@@ -11,6 +13,7 @@ class PrimaryButton extends StatefulWidget {
 
   PrimaryButton(
       {
+      this.isOrderCreating,
       this.icon,
       this.colorButton,
       @required this.buttonText,
@@ -56,7 +59,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
             },
         child: Transform.scale(
             scale: _scale,
-            child: Container(              
+            child: Container(
               height: widget.height == null
                   ? 25
                   : widget.height,
@@ -67,21 +70,39 @@ class _PrimaryButtonState extends State<PrimaryButton>
                 color: widget.colorButton,
                 boxShadow: [
                   BoxShadow(
-                    blurRadius: 5.0,
+                    blurRadius: 3.0,
                     color: Colors.black.withOpacity(.3),
                     offset: Offset(1.0, 1.0),
                   ),
                 ],
                 borderRadius: BorderRadius.circular(borderRadius),               
               ),
-              child: FlatButton(                
+              child: FlatButton(
                 color: Colors.transparent,
-                child: Text(
+                child: widget.isOrderCreating?
+                      SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(                       
+                                strokeWidth: 2,
+                                backgroundColor: Colors.white
+                              )):widget.icon != null?Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                      Icon(widget.icon,color: Colors.white,),
+                      Text(
+                        widget.buttonText,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17),
+                      ),
+                  ],
+                ):Text(
                         widget.buttonText,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20),
+                            fontSize: 19),
                       ), 
                 onPressed: null,
                 shape: RoundedRectangleBorder(
