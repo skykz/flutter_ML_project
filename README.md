@@ -1,6 +1,13 @@
-# project_ai
+# project_ai Flutter project object detection on image from camera & gallery with Tensorflow Lite
 
-A new Flutter project.
+- Features:
+  * Able to switch lang between RU - EN
+  * Able to capture picture with camera and detect object on image
+  * Able to import from Gallery to detect monument object on image
+  * Able to see more information about detected object (data from Firebase)
+  * Able to open and see all objects in Almaty (KAZ)
+    * Able to see route between you and object and load more info from Firebase
+  * Able to send feedback from Contact form to me (Firebase)
 
 ## Getting Started
 
