@@ -15,28 +15,29 @@ class ThumbnailWidget extends StatefulWidget {
 
 class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   String thumb;
+  ImagePicker _imagePicker = ImagePicker();
   @override
   void initState() {
     super.initState();
   }
 
   Future getImage() async {
-    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+    var image = await _imagePicker.getImage(source: ImageSource.gallery);
     if (image == null) {
       return null;
     }
     Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => CameraImageResult(
-              imageFile:image,
+              imageFile: File(image.path),
             )));
-    return image;            
+    return image;
   }
 
   @override
   Widget build(BuildContext context) {
     thumb = widget.imagePath;
     return InkWell(
-      onTap: getImage,   
+      onTap: getImage,
       borderRadius: BorderRadius.circular(20.0),
       splashColor: Colors.purpleAccent,
       child: Padding(

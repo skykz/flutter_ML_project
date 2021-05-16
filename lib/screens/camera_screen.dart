@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:camera/camera.dart';
@@ -25,13 +24,12 @@ class _CameraScreenState extends State<CameraScreen>
   String imagePath; // for store image format wiht path
   File imagePathFile;
   bool isPermitted = true;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();  
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _isDetecting = false;
   static var modelLoaded = false;
   AnimationController _colorAnimController;
   Animation _colorTween;
-
 
   @override
   void initState() {
@@ -41,10 +39,9 @@ class _CameraScreenState extends State<CameraScreen>
 
   @override
   void dispose() {
-    controller?.dispose(); 
+    controller?.dispose();
     super.dispose();
   }
-
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -83,9 +80,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (!mounted) {
         return;
       }
-      if(this.mounted)
-      setState(() {        
-      });
+      if (this.mounted) setState(() {});
     });
   }
 
@@ -114,7 +109,7 @@ class _CameraScreenState extends State<CameraScreen>
     }
 
     try {
-      await controller.takePicture(filePath);
+      await controller.takePicture();
     } on CameraException catch (e) {
       _showCameraException(e);
       return null;
@@ -122,12 +117,11 @@ class _CameraScreenState extends State<CameraScreen>
     print(filePath);
     // controller.dispose(); // if i use it first of all controller will be disposed and next screen opens slowly(because happening init new controller)
 
-    Navigator.of(context)
-        .push(MaterialPageRoute(
-            builder: (context) => CameraImageResult(
-                imagePath: filePath,
-                imageFile: null,
-                )));      
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => CameraImageResult(
+              imagePath: filePath,
+              imageFile: null,
+            )));
     if (!video)
       setState(() {
         this.imagePath = filePath;
@@ -148,17 +142,16 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
-    return  Stack(           
-      fit: StackFit.expand,   
-                children: <Widget>[               
-                  _cameraPreviewWidget(),                   
-                  getOptionsWidget(),                                 
-                  ],                 
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        _cameraPreviewWidget(),
+        getOptionsWidget(),
+      ],
     );
   }
 
   Widget getOptionsWidget() {
-    
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -168,34 +161,32 @@ class _CameraScreenState extends State<CameraScreen>
         actionsIconTheme: IconThemeData(color: Colors.white),
         leading: IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon:Icon(Icons.arrow_back_ios,size: 30)),
-        actions: <Widget>[
-         _getCameraSwitch()                           
-        ],
+            icon: Icon(Icons.arrow_back_ios, size: 30)),
+        actions: <Widget>[_getCameraSwitch()],
       ),
-      bottomNavigationBar:  getCameraButtonRow(),
+      bottomNavigationBar: getCameraButtonRow(),
     );
   }
 
   Widget _cameraPreviewWidget() {
-    final size = MediaQuery.of(context).size;    
+    final size = MediaQuery.of(context).size;
     final deviceRatio = size.width / size.height;
 
     if (controller == null || !controller.value.isInitialized) {
       return Center(
         child: CupertinoActivityIndicator(
-          radius: 17,          
+          radius: 17,
         ),
       );
     } else {
       return Center(
-          child:Transform.scale(
-            scale: controller.value.aspectRatio / deviceRatio,
-            child: AspectRatio(
-                aspectRatio: controller.value.aspectRatio,
-                child: CameraPreview(controller),
-              ),
-            ),
+        child: Transform.scale(
+          scale: controller.value.aspectRatio / deviceRatio,
+          child: AspectRatio(
+            aspectRatio: controller.value.aspectRatio,
+            child: CameraPreview(controller),
+          ),
+        ),
       );
     }
   }
@@ -210,57 +201,58 @@ class _CameraScreenState extends State<CameraScreen>
 
   //button to switch between cameras
   Widget _getCameraSwitch() {
-    return  SizedBox(
-                height: 60,
-                width: 60,
-                child: InkWell(                
-                onTap: (){
-                  if (controller != null && !controller.value.isRecordingVideo) {
-                            CameraLensDirection direction = controller.description.lensDirection;
-                            CameraLensDirection required = direction == CameraLensDirection.front
-                                ? CameraLensDirection.back
-                                : CameraLensDirection.front;
+    return SizedBox(
+      height: 60,
+      width: 60,
+      child: InkWell(
+        onTap: () {
+          if (controller != null && !controller.value.isRecordingVideo) {
+            CameraLensDirection direction =
+                controller.description.lensDirection;
+            CameraLensDirection required =
+                direction == CameraLensDirection.front
+                    ? CameraLensDirection.back
+                    : CameraLensDirection.front;
 
-                            for (CameraDescription cameraDescription in cameras) {
-                              if (cameraDescription.lensDirection == required) {
-                                onNewCameraSelected(cameraDescription);
-                                return;
-                              }
-                            }
-                    }
-                },
-                borderRadius: BorderRadius.circular(20.0),
-                splashColor: Colors.purpleAccent,              
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: SvgPicture.asset(
-                    "assets/images/switch-camera.svg",
-                    color: Colors.purpleAccent,),
-                ),
-              ),
-              );    
+            for (CameraDescription cameraDescription in cameras) {
+              if (cameraDescription.lensDirection == required) {
+                onNewCameraSelected(cameraDescription);
+                return;
+              }
+            }
+          }
+        },
+        borderRadius: BorderRadius.circular(20.0),
+        splashColor: Colors.purpleAccent,
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: SvgPicture.asset(
+            "assets/images/switch-camera.svg",
+            color: Colors.purpleAccent,
+          ),
+        ),
+      ),
+    );
   }
 
   // the row located camera button, swich button and etc.
   Widget getCameraButtonRow() {
     return Container(
-      padding: EdgeInsets.only(top: 20.0,bottom: 20.0),
-      color: Colors.black.withOpacity(0.2),
-      child:Column(      
-      mainAxisSize: MainAxisSize.min,  
-      children: <Widget>[        
-        CameraButton(takePicture: takePicture),       
-      ],
-    ));
+        padding: EdgeInsets.only(top: 20.0, bottom: 20.0),
+        color: Colors.black.withOpacity(0.2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            CameraButton(takePicture: takePicture),
+          ],
+        ));
   }
 
-  
   // snacbar method, we can use it where in Story_screen.dart
   void showInSnackBar(String message) {
-    _scaffoldKey.currentState.showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 1), content: Text(message)));
+    _scaffoldKey.currentState.showSnackBar(SnackBar(
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 1),
+        content: Text(message)));
   }
-
 }

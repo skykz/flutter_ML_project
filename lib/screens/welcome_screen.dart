@@ -185,15 +185,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 buttonText:
                     AppLocalizations.of(context).translate('pick_camera'),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => CameraScreen()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => CameraScreen()));
                 },
                 colorButton: Colors.black,
                 height: 50.0,
                 width: 200.0,
-              ),                          
+              ),
               SizedBox(
                 height: 30.0,
               ),
@@ -201,8 +199,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 isOrderCreating: false,
                 buttonText: AppLocalizations.of(context).translate('about'),
                 onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => FeedBackScreen()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => FeedBackScreen()));
                 },
                 colorButton: Colors.orange,
                 height: 50.0,
@@ -219,7 +219,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future getImage() async {
-    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+    ImagePicker _imagePicker;
+    var image = await _imagePicker.getImage(source: ImageSource.gallery);
     if (image == null) {
       return null;
     }

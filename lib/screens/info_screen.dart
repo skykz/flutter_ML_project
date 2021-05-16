@@ -1,4 +1,3 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,7 +17,7 @@ class InfoScreen extends StatefulWidget {
 }
 
 class _InfoScreenState extends State<InfoScreen> {
-  final databaseReference = Firestore.instance;
+  final databaseReference = FirebaseFirestore.instance;
 
   MapModel mapModel = MapModel();
 
@@ -35,20 +34,17 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 
   void getData(int id) {
-    databaseReference
-        .collection("data")
-        .getDocuments()
-        .then((QuerySnapshot snapshot) {
-      snapshot.documents.forEach((element) {
-        if (element.data['id'] == id) {
+    databaseReference.collection("data").get().then((QuerySnapshot snapshot) {
+      snapshot.docs.forEach((element) {
+        if (element.id == id.toString()) {
           print("================= ${element.data}");
           {
             setState(() {
-              mapModel.title_ru = element.data['title_ru'];
-              mapModel.title_en = element.data['title_en'];
-              mapModel.description_ru = element.data['description_ru'];
-              mapModel.description_en = element.data['description_en'];
-              mapModel.image_url = element.data['image_url'];
+              mapModel.title_ru = element.get('title_ru');
+              mapModel.title_en = element.get('title_en');
+              mapModel.description_ru = element.get('description_ru');
+              mapModel.description_en = element.get('description_en');
+              mapModel.image_url = element.get('image_url');
             });
           }
         }
